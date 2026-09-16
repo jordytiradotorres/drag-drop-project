@@ -11,6 +11,35 @@ function Autobind(_: any, _2: string, description: PropertyDescriptor) {
   return adjDescriptor
 }
 
+interface IValidatable {
+  value: string | number
+  required?: boolean
+  minLength?: number
+  maxLength?: number
+  min?: number
+  max?: number
+}
+function validate(validatableInput: IValidatable): boolean  {
+  let isValid = true
+
+  if (validatableInput.required) {
+    isValid = isValid && validatableInput.value.toString().trim().length !== 0
+  }
+  if (validatableInput.minLength != null && typeof validatableInput.value === "string") {
+    isValid = isValid && validatableInput.value.length >= validatableInput.minLength
+  }
+  if (validatableInput.maxLength != null && typeof validatableInput.value === "string") {
+    isValid = isValid && validatableInput.value.length <= validatableInput.maxLength
+  }
+  if (validatableInput.min != null && typeof validatableInput.value === "number") {
+    isValid = isValid && validatableInput.value >= validatableInput.min
+  }
+  if (validatableInput.max != null && typeof validatableInput.value === "number") {
+    isValid = isValid && validatableInput.value <= validatableInput.max
+  }
+  return isValid
+}
+
 class ProjectInput {
   templateElement: HTMLTemplateElement
   hostElement: HTMLDivElement
@@ -35,10 +64,54 @@ class ProjectInput {
     this.attach()
   }
 
+  private gatherUserInput(): [string, string, number] | void {
+    const enteredTitle = this.titleInputElement.value
+    const enteredDescription = this.descriptionInputElement.value
+    const enteredPeople = this.peopleInputElement.value
+
+    const titleValidatable: IValidatable = {
+      value: enteredTitle,
+      required: true
+    }
+    const descriptionValidatable: IValidatable = {
+      value: enteredDescription,
+      required: true,
+      minLength: 5
+    }
+    const peopleValidatable: IValidatable = {
+      value: +enteredPeople,
+      required: true,
+      min: 1,
+      max: 5
+    }
+
+    if (!validate(titleValidatable) ||
+        !validate(descriptionValidatable) ||
+        !validate(peopleValidatable)) {
+      alert("Por favor, intente de nuevo.")
+      return
+    } else {
+      return [enteredTitle, enteredDescription, +enteredPeople]
+    }
+  }
+
+  private clearInput() {
+    this.titleInputElement.value = ""
+    this.descriptionInputElement.value = ""
+    this.peopleInputElement.value = ""
+  }
+
   @Autobind
   private submitHandler(e: Event) {
     e.preventDefault()
-    console.log(this.titleInputElement.value)
+    const userInput = this.gatherUserInput()
+
+    if (Array.isArray(userInput)) {
+      const [title, description, people] = userInput
+      console.log({title, description, people})
+    }
+
+    this.clearInput()
   }
 
   private configure() {
